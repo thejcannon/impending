@@ -1,0 +1,9 @@
+[package]
+name = "impending-module-map"
+version = "0.0.1"
+edition = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+lazy_static = { workspace = true }

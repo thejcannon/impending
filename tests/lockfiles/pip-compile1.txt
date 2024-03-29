@@ -1,0 +1,6 @@
+asgiref==3.6.0
+    # via django
+django==4.1.7
+    # via my-cool-django-app (pyproject.toml)
+sqlparse==0.4.3
+    # via django

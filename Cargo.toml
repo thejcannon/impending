@@ -1,0 +1,18 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.74"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+anyhow = "1.0.80"
+lazy_static = "1.4.0"
+pyo3 = { version = "0.20.2", features = ["auto-initialize"] }
+pyo3-build-config = { version = "0.20.2" }
+serde = "1.0.197"
+toml = "0.8.10"
+tree-sitter = "0.20.10"
+tree-sitter-requirements = { git = "https://github.com/tree-sitter-grammars/tree-sitter-requirements.git", tag="v0.2.0" }
