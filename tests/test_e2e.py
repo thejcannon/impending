@@ -22,19 +22,27 @@ def lockfile(name):
     ["modname", "lockfile", "expected_install"],
     [
         pytest.param("direct_dep", "direct_dep", "direct_dep", id="simple"),
-        pytest.param("direct_dep", "direct_dep == 0.0", "direct_dep == 0.0", id="simple_pin1"),
-        pytest.param("direct_dep", "direct_dep==0.0", "direct_dep==0.0", id="simple_pin2"),
-        pytest.param("direct_dep", "direct_dep @ http://website.com/package", "direct_dep @ http://website.com/package", id="url_pin1"),
-        pytest.param("direct_dep", 'direct_dep @ http://website.com/package ;python_version<"2.7"', 'direct_dep @ http://website.com/package ;python_version<"2.7"', id="url_pin2"),
-        pytest.param("direct_dep", "direct_dep[extra1]", "direct_dep[extra1]", id="extras1"),
-        pytest.param("direct_dep", "direct_dep[extra1, extra2]", "direct_dep[extra1, extra2]", id="extras2"),
-        pytest.param("direct_dep", 'direct_dep [security,tests] >= 2.8.1, == 2.8.* ; python_version < "2.7"', 'direct_dep [security,tests] >= 2.8.1, == 2.8.* ; python_version < "2.7"', id="complicated1"),
-        pytest.param("direct_dep", "direct_dep\nother_dep", "direct_dep", id="superfluous1"),
-        pytest.param("direct_dep", "other_dep\ndirect_dep", "direct_dep", id="superfluous2"),
-        pytest.param("my_cool_django_app", lockfile("pip-compile1.txt"), "my-cool-django-app", id="requirements1"),
+        pytest.param("direct_dep", "direct_dep == 0.0", "direct_dep == 0.0", id="simple_pin"),
+        pytest.param("direct_dep", "direct_dep==0.0", "direct_dep==0.0", id="simple_pin"),
+        pytest.param("direct_dep", "direct_dep @ http://website.com/package", "direct_dep @ http://website.com/package", id="url_pin"),
+        pytest.param("direct_dep", 'direct_dep @ http://website.com/package ;python_version<"2.7"', 'direct_dep @ http://website.com/package ;python_version<"2.7"', id="url_pin"),
+        pytest.param("direct_dep", "direct_dep[extra1]", "direct_dep[extra1]", id="extras"),
+        pytest.param("direct_dep", "direct_dep[extra1, extra2]", "direct_dep[extra1, extra2]", id="extras"),
+        pytest.param("direct_dep", 'direct_dep [security,tests] >= 2.8.1, == 2.8.* ; python_version < "2.7"', 'direct_dep [security,tests] >= 2.8.1, == 2.8.* ; python_version < "2.7"', id="complicated"),
+        pytest.param("direct_dep", "direct_dep\nother_dep", "direct_dep", id="superfluous"),
+        pytest.param("direct_dep", "other_dep\ndirect_dep", "direct_dep", id="superfluous"),
+        pytest.param("django", lockfile("pip-compile1.txt"), "django==4.1.7\nsqlparse==0.4.3\nasgiref==3.6.0", id="requirements"),
+        pytest.param("asgiref", lockfile("pip-compile1.txt"), "asgiref==3.6.0", id="requirements"),
+        pytest.param("sqlparse", lockfile("pip-compile1.txt"), "sqlparse==0.4.3", id="requirements"),
+        pytest.param("django", lockfile("pip-compile2.txt"), "django==4.1.7\nsqlparse==0.4.3\nasgiref==3.6.0", id="requirements"),
+        pytest.param("pydantic", lockfile("pip-compile3.txt"), "pydantic==2.6.1\ntyping-extensions==4.9.0\npydantic-core==2.16.2\nannotated-types==0.6.0", id="requirements"),
+        pytest.param("typing_extensions", lockfile("pip-compile3.txt"), "typing-extensions==4.9.0", id="requirements"),
+        pytest.param("rich", lockfile("f2246ce.txt"), "rich", id="requirements"),
+        pytest.param("keras", lockfile("f2246ce.txt"), "keras ; python_version < '3.12'", id="requirements"),
     ]
 )
 def test_dependency_resolution(modname: str, project_dir: ProjectDir, lockfile: str, expected_install: str):
+    project_dir.install_impending()
     reqs_path = project_dir.path / "wouldve_installed.txt"
     project_dir.write_tree(
         {
@@ -42,14 +50,13 @@ def test_dependency_resolution(modname: str, project_dir: ProjectDir, lockfile: 
                 f"""\
                 [tool.impending]
                 lockfile = "requirements.txt"
-                installer_cmd = ["bash", "-c", "echo $@ > {reqs_path}", "_"]
+                installer_cmd = ["bash", "-c", "printf '%s\\n' \\"$@\\" > {reqs_path}", "_"]
                 """,
             "requirements.txt": lockfile + "\n",
-            "project/__init__.py": "__import__('impending').install()",
+            # "project/__init__.py": "__import__('impending').install()",
             "project/doom.py": f"import {modname}",
          },
     )
-    project_dir.install_impending()
     subprocess.call(
         [str(project_dir.python_path), "-m", "project.doom"],
         cwd=str(project_dir.path),

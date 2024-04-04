@@ -34,13 +34,13 @@ fn install(py: Python<'_>) -> PyResult<()> {
 
     let start_dir = find_caller_dir(py).context("Failed to get the caller's directory")?;
     let config = impending_config::Config::load(&start_dir)
-        .context("Failed to load the relevant pyproject.toml")?;
+    .context("Failed to load the relevant pyproject.toml")?;
 
-    let our_mpf = mpf::ImpendingMPF::from_config(config)?;
-    sys.getattr("meta_path")?
-        .call_method("insert", (0, our_mpf), None)?;
+let our_mpf = mpf::ImpendingMPF::from_config(config)?;
+sys.getattr("meta_path")?
+.call_method("insert", (0, our_mpf), None)?;
 
-    Ok(())
+Ok(())
 }
 
 #[pymodule]

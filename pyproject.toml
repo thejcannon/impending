@@ -13,6 +13,7 @@ readme = "README.md"
 manifest-path = "crates/impending/Cargo.toml"
 features = ["pyo3/extension-module"]
 module-name = "impending._impl"
+include = ["_impending.pth"]
 python-source = "python"
 strip = true
 

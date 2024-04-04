@@ -2,6 +2,7 @@ use impending_config::Config;
 use pyo3::prelude::*;
 use std::env;
 use std::process::Command;
+use std::collections::HashSet;
 
 use anyhow::Result;
 use impending_module_map::{stdlib::STDLIB_MODULES, ModuleMap};
@@ -64,7 +65,12 @@ impl ImpendingMPF {
     fn maybe_install_reqs(&self, sys: &PyModule, pkgname: String) -> anyhow::Result<bool> {
         let mut requirements = vec![];
         let mut packages = vec![pkgname];
+        let mut seen: HashSet<String> = HashSet::new();
         while let Some(pkgname) = packages.pop() {
+            if !seen.insert(pkgname.clone()) {
+                continue;
+            }
+
             if let Some(depmap) = &self.depmap {
                 if let Some(dependencies) = depmap.get(&pkgname) {
                     packages.extend(dependencies.iter().cloned());
@@ -72,7 +78,7 @@ impl ImpendingMPF {
             }
             if let Some(reqmap) = &self.reqmap {
                 if let Some(reqinfo) = reqmap.get(&pkgname) {
-                    requirements.push(reqinfo.to_requirement(pkgname));
+                    requirements.push(reqinfo.to_requirement(&pkgname));
                 }
             }
         }

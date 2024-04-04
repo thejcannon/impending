@@ -23,9 +23,9 @@ impl ReqInfo {
         }
     }
 
-    pub fn to_requirement(&self, pkgname: String) -> String {
+    pub fn to_requirement(&self, pkgname: &String) -> String {
         [
-            &Some(pkgname),
+            &Some(pkgname.clone()),
             &self.extras,
             &self.url_spec,
             &self.version_spec,

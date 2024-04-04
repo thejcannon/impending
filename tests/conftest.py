@@ -23,6 +23,7 @@ class ProjectDir:
             text=True,
         ).strip()
         Path(site_sir, "impending.pth").write_text(str(Path(__file__).parent.parent / "python"))
+        Path(site_sir, "_impending.pth").write_text((Path(__file__).parent.parent / "python" / "_impending.pth").read_text())
 
     def write_tree(self, tree: dict[str, str]) -> None:
         for path, contents in tree.items():
