@@ -15,7 +15,6 @@ anyhow = { workspace = true }
 pyo3 = { workspace = true, features = ["anyhow"] }
 toml = { workspace = true }
 impending-config = { path = "../impending-config" }
-impending-module-map = { path = "../impending-module-map" }
 impending-requirements = { path = "../impending-requirements" }
 serde = { workspace = true, features=["derive"] }
 

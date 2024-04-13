@@ -14,6 +14,7 @@ def project_dir(tmp_path) -> ProjectDir:
     return ProjectDir(tmp_path, tmp_path / ".venv")
 
 def test_simple(project_dir: ProjectDir):
+    project_dir.install_impending()
     project_dir.write_tree(
         {
             "pyproject.toml":
@@ -22,11 +23,9 @@ def test_simple(project_dir: ProjectDir):
                 lockfile = "requirements.txt"
                 """,
             "requirements.txt": "requests\n",
-            "project/__init__.py": "__import__('impending').install()",
             "project/doom.py": "import requests",
          },
     )
-    project_dir.install_impending()
 
     # Note that `requests` is not installed in the project's venv
     assert "requests" not in subprocess.check_output(

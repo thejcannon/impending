@@ -5,6 +5,8 @@ edition = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+impending-requirements = { path = "../impending-requirements" }
 anyhow = { workspace = true }
+pyo3 = { workspace = true, features = ["serde"] }
 toml = { workspace = true }
 serde = { workspace = true, features=["derive"] }

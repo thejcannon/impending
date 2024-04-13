@@ -1,8 +1,10 @@
-use crate::{DepMap, ReqInfo, ReqMap};
+use crate::{Maps, ReqInfo};
 use anyhow::Result;
 use std::collections::HashMap;
 
-pub fn parse_requirements_txt(path: &str) -> Result<(ReqMap, DepMap)> {
+use crate::utils::pep508_normalize;
+
+pub fn parse_requirements_txt(path: &str) -> Result<Maps> {
     let contents = std::fs::read_to_string(path)?;
     let code = contents.as_bytes();
 
@@ -46,7 +48,7 @@ pub fn parse_requirements_txt(path: &str) -> Result<(ReqMap, DepMap)> {
                     _ => (),
                 }
             }
-            reqmap.insert(pkgname.clone(), req_info);
+            reqmap.insert(pep508_normalize(&pkgname), req_info);
             cursor.goto_parent();
             if !cursor.goto_next_sibling() {
                 break;
@@ -69,9 +71,9 @@ pub fn parse_requirements_txt(path: &str) -> Result<(ReqMap, DepMap)> {
                                     .unwrap()
                                     .trim();
                                 depmap
-                                    .entry(rdep_name.to_owned())
+                                    .entry(pep508_normalize(&rdep_name.to_owned()))
                                     .or_insert_with(Vec::new)
-                                    .push(pkgname.clone());
+                                    .push(pep508_normalize(&pkgname));
                             } else {
                                 break;
                             }
@@ -82,9 +84,9 @@ pub fn parse_requirements_txt(path: &str) -> Result<(ReqMap, DepMap)> {
                             comment.split(',').map(|s| s.trim().to_string()).collect();
                         for rdep_name in pkgs {
                             depmap
-                                .entry(rdep_name)
+                                .entry(pep508_normalize(&rdep_name))
                                 .or_insert_with(Vec::new)
-                                .push(pkgname.clone());
+                                .push(pep508_normalize(&pkgname));
                         }
                     }
                 }
@@ -94,5 +96,5 @@ pub fn parse_requirements_txt(path: &str) -> Result<(ReqMap, DepMap)> {
         }
     }
 
-    Ok((reqmap, depmap))
+    Ok(Maps { reqmap, depmap })
 }

@@ -1,1 +1,1 @@
-__import__("impending").install();
+import impending; impending.install()

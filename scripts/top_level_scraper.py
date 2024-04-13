@@ -72,6 +72,7 @@ try:
                 whl_to_top_level[pkgname] = []
                 continue
             try:
+                # @TODO: read RECORD instead and parse filenames?
                 whl_to_top_level[pkgname] = d.read_text("top_level.txt").splitlines()
             except FileNotFoundError:
                 whl_to_top_level[pkgname] = []

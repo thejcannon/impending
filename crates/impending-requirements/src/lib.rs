@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 mod requirements_txt;
+pub mod utils;
 pub use requirements_txt::parse_requirements_txt;
+
+pub type NormalizedPkgName = String;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReqInfo {
@@ -36,7 +39,22 @@ impl ReqInfo {
         .filter_map(|o| o.as_ref().map(String::as_str))
         .collect::<_>()
     }
+
+    pub fn pinned_version(&self) -> Option<String> {
+        if let Some(version_spec) = &self.version_spec {
+            let version_spec = version_spec.trim();
+            if let Some((_empty, version)) = version_spec.split_once("==") {
+                return Some(version.to_owned());
+            }
+        }
+        None
+    }
 }
 
-pub type ReqMap = HashMap<String, ReqInfo>;
-pub type DepMap = HashMap<String, Vec<String>>;
+pub type ReqMap = HashMap<NormalizedPkgName, ReqInfo>;
+pub type DepMap = HashMap<NormalizedPkgName, Vec<NormalizedPkgName>>;
+
+pub struct Maps {
+    pub reqmap: ReqMap,
+    pub depmap: DepMap,
+}
