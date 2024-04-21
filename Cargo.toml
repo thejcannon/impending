@@ -16,3 +16,4 @@ serde = "1.0.197"
 toml = "0.8.10"
 tree-sitter = "0.20.10"
 tree-sitter-requirements = { git = "https://github.com/tree-sitter-grammars/tree-sitter-requirements.git", tag="v0.2.0" }
+walkdir = "2.5.0"

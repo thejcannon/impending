@@ -64,8 +64,10 @@ class RefreshPackageMPF(OnSpecFoundMPF):
             return spec
         expected_version = self.config.get_expected_version(spec.name)
         if expected_version != dist.version:
-            # @TODO: `return None` should work here?
-            self.config.maybe_install(spec.name)
+            # NB: Since the core code loops over the real meta_path
+            #   it won't make it to the InstallMissingPackageMPF.
+            if self.config.install_missing_packages:
+                self.config.maybe_install(spec.name)
             return None
 
         return spec
@@ -96,7 +98,7 @@ def install():
     if config.install_missing_packages:
         MetaPathWrapper.on_spec_not_found.append(InstallMissingPackageMPF(config))
 
-    # @TODO: I don't understand the recursion :(
+    # @TODO: I don't understand the double-call :(
     os.environ["IMPENDING_NO_INSTALL"] = "1"
 
 

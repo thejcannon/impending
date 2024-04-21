@@ -35,6 +35,10 @@ pub struct Config {
     #[pyo3(get)]
     pub install_missing_packages: Option<bool>,
 
+    // @TODO: More fields, like:
+    //  - Enforce transitive packages
+    //  - Install types-packages
+
     #[serde(skip)]
     maps: Option<Maps>,
 
@@ -93,6 +97,10 @@ impl Config {
             if reqmap.contains_key(&pkgname) {
                 return Some(pkgname);
             }
+
+            // @TODO: More strategies:
+            //  - Azure does azure_NAME where NAME is "replace dots with underscores"
+            //      e.g. azure_mgmt_datalake_analytics -> azure.mgmt.datalake.analytics
         }
 
         // At least we tried
@@ -102,6 +110,8 @@ impl Config {
 
 #[pymethods]
 impl Config {
+    // @TODO: I think this could probably be handled better in Rust.
+    //  E.g. does the distribution finding, can look things up transitively, etc...
     pub fn get_expected_version(&mut self, fullname: String) -> anyhow::Result<Option<String>> {
         self.initialize_maps()?;
         let pkgname = self.find_package(fullname);
@@ -118,6 +128,7 @@ impl Config {
         Ok(None)
     }
 
+    // @TODO: Special-case impending? :)
     pub fn maybe_install(&mut self, fullname: String) -> anyhow::Result<bool> {
         self.initialize_maps()?;
 
