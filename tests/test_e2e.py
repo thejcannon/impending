@@ -320,7 +320,7 @@ def test_middle_modnames(
                 ASKED_COUNT += 1
                 if name == "top":
                     print("top")
-                    if ASKED_COUNT == 3:
+                    if ASKED_COUNT == 2:
                         import subdir
                         subdir.__spec__.name = "top"
                         return subdir.__spec__

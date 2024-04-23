@@ -32,16 +32,15 @@ pub struct Config {
     // Toggles
     #[pyo3(get)]
     pub enforce_package_versions: Option<bool>,
+    // @TODO: Maybe this is just on by default for lockfiles?
     #[pyo3(get)]
     pub enforce_transitive_package_versions: Option<bool>,
-
 
     #[pyo3(get)]
     pub install_missing_packages: Option<bool>,
 
     // @TODO: More fields, like:
     //  - Install types-packages
-
     #[serde(skip)]
     maps: Option<Maps>,
 
