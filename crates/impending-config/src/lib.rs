@@ -33,10 +33,13 @@ pub struct Config {
     #[pyo3(get)]
     pub enforce_package_versions: Option<bool>,
     #[pyo3(get)]
+    pub enforce_transitive_package_versions: Option<bool>,
+
+
+    #[pyo3(get)]
     pub install_missing_packages: Option<bool>,
 
     // @TODO: More fields, like:
-    //  - Enforce transitive packages
     //  - Install types-packages
 
     #[serde(skip)]

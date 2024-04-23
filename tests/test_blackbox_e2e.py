@@ -5,6 +5,7 @@ from .conftest import ProjectDir
 
 import pytest
 
+
 @pytest.fixture
 def project_dir(tmp_path) -> ProjectDir:
     subprocess.check_call(
@@ -13,18 +14,19 @@ def project_dir(tmp_path) -> ProjectDir:
     )
     return ProjectDir(tmp_path, tmp_path / ".venv")
 
+
 def test_simple(project_dir: ProjectDir):
     project_dir.install_impending()
     project_dir.write_tree(
         {
-            "pyproject.toml":
-                """\
+            "pyproject.toml": """\
                 [tool.impending]
                 lockfile = "requirements.txt"
+                install_missing_packages = true
                 """,
             "requirements.txt": "requests\n",
             "project/doom.py": "import requests",
-         },
+        },
     )
 
     # Note that `requests` is not installed in the project's venv
