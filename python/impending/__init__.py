@@ -78,7 +78,8 @@ class InstallMissingPackageMPF(OnSpecNotFoundMPF):
 
     def on_spec_not_found(self, fullname, path, target):
         print(fullname, path, target, file=sys.stderr)
-        self.config.maybe_install(fullname)
+        print(sys.prefix)
+        self.config.maybe_install(sys.prefix, fullname)
         return True
 
 

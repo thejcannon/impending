@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.fixture
-def project_dir(tmp_path) -> ProjectDir:
+def project_dir(tmp_path: Path) -> ProjectDir:
     subprocess.check_call(
         [sys.executable, "-m", "uv", "venv", "--seed", ".venv", "-q"],
         cwd=tmp_path,
@@ -33,6 +33,7 @@ def test_simple(project_dir: ProjectDir):
     assert "requests" not in subprocess.check_output(
         [str(project_dir.python_path), "-m", "pip", "list"],
         text=True,
+        cwd=str(project_dir.path),
     )
     # Run the code that attempts to import `requests`. Note this succeeds.
     subprocess.check_call(
@@ -44,4 +45,5 @@ def test_simple(project_dir: ProjectDir):
     assert "requests" in subprocess.check_output(
         [str(project_dir.python_path), "-m", "pip", "list"],
         text=True,
+        cwd=str(project_dir.path),
     )

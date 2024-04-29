@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
-import sys
 import textwrap
 
-import pytest
 
 
 @dataclass(frozen=True)

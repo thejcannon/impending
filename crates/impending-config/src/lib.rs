@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -35,10 +35,8 @@ pub struct Config {
     // @TODO: Maybe this is just on by default for lockfiles?
     #[pyo3(get)]
     pub enforce_transitive_package_versions: Option<bool>,
-
     #[pyo3(get)]
     pub install_missing_packages: Option<bool>,
-
     // @TODO: More fields, like:
     //  - Install types-packages
     #[serde(skip)]
@@ -51,14 +49,21 @@ pub struct Config {
 impl Config {
     pub fn load(start_dir: &Path) -> anyhow::Result<Self> {
         if let Some(config_path) = find_pyproject(start_dir) {
-            let contents = fs::read_to_string(config_path)?;
+            let contents = fs::read_to_string(config_path.clone())?;
             let pyproject: PyProject = toml::from_str(contents.as_str())?;
             let config = pyproject.tool.and_then(|tool| tool.impending);
             if let Some(config) = config {
                 return Ok(config);
             }
+            return Err(anyhow::anyhow!(
+                "Failed to load tool.impending section in {:?}.",
+                config_path
+            ));
         }
-        Err(anyhow::anyhow!("Expected a tool.impending section"))
+        Err(anyhow::anyhow!(
+            "Couldn't find pyproject.toml at or above {:?}",
+            start_dir
+        ))
     }
 
     fn initialize_maps(&mut self) -> anyhow::Result<()> {
@@ -131,7 +136,7 @@ impl Config {
     }
 
     // @TODO: Special-case impending? :)
-    pub fn maybe_install(&mut self, fullname: String) -> anyhow::Result<bool> {
+    pub fn maybe_install(&mut self, sys_prefix: String, fullname: String) -> anyhow::Result<bool> {
         self.initialize_maps()?;
 
         let pkgname = self.find_package(fullname);
@@ -175,6 +180,10 @@ impl Config {
             args.extend(requirements);
             Command::new(program)
                 .args(args)
+                .env(
+                    "PATH",
+                    format!("{}/bin:{}", sys_prefix, env::var("PATH").unwrap()),
+                )
                 .status()
                 .expect("failed to execute process");
 
