@@ -4,7 +4,6 @@ import subprocess
 import textwrap
 
 
-
 @dataclass(frozen=True)
 class ProjectDir:
     path: Path
