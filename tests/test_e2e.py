@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 import os
 from textwrap import dedent
@@ -21,13 +22,14 @@ class ProjectDir(RootProjectDir):
         module_map: dict[str, str] = {},
         package_companions: dict[str, list[str]] = {},
         enforce_package_versions: bool = False,
+        installer_cmd_post: str = "true",
     ):
         self.write_tree(
             {
                 "pyproject.toml": f"""\
                     [tool.impending]
                     lockfile = "requirements.txt"
-                    installer_cmd = ["bash", "-c", "printf '%s\\n' \\"$@\\" >> {self._would_installed_path}", "_"]
+                    installer_cmd = ["bash", "-c", "printf '%s\\n' \\"$@\\" >> {self._would_installed_path} && {installer_cmd_post}", "_"]
                     module_map = {str(module_map).replace(":", "=")}
                     package_companions = {str(package_companions).replace(":", "=")}
                     install_missing_packages = true
@@ -37,14 +39,13 @@ class ProjectDir(RootProjectDir):
             },
         )
 
-    def try_to_import(self, modname: str, warmup: str = "") -> str:
-        return self.try_to_import_many([modname], warmup=warmup)
+    def try_to_import(self, modname: str) -> str:
+        return self.try_to_import_many([modname])
 
-    def try_to_import_many(self, modnames: list[str], warmup: str = "") -> str:
+    def try_to_import_many(self, modnames: list[str]) -> str:
         self.write_tree(
             {
-                "test/__init__.py": warmup,
-                "test/test.py": "\n\n".join(
+                "test.py": "\n\n".join(
                     # NB: Remember we don't _actually_ install anything, so
                     # every import will be an `ImportError`
                     f"try:import {modname}\nexcept ImportError:pass"
@@ -54,7 +55,7 @@ class ProjectDir(RootProjectDir):
         )
 
         subprocess.check_call(
-            [str(self.python_path), "-m", "test.test"],
+            [str(self.python_path), "-m", "test"],
             cwd=str(self.path),
         )
         return self._would_installed_path.read_text().splitlines()
@@ -295,7 +296,7 @@ def test_everything(
             "top.middle.bottom",
             {"top": "package-a", "top.middle": "package-b"},
             "package-a\npackage-b",
-            ["package_a", "package-b"],
+            ["package_a", "package_b"],
             id="dotted",
         ),
     ],
@@ -307,35 +308,16 @@ def test_middle_modnames(
     lockfile: str,
     expected_args: list[str],
 ):
-    warmup = dedent(
-        """
-        import sys
-
-        ASKED_COUNT = 0
-
-        class ExistsAfterInstallationMpf:
-            def find_spec(self, name, path, target):
-                global ASKED_COUNT
-                ASKED_COUNT += 1
-                if name == "top":
-                    if ASKED_COUNT == 2:
-                        import subdir
-                        subdir.__spec__.name = "top"
-                        return subdir.__spec__
-                return None
-
-        sys.meta_path.append(ExistsAfterInstallationMpf())
-        """
-    )
-    project_dir.write_tree(
-        {
-            "subdir/__init__.py": "",
-            "subdir/middle.py": "",
-        }
-    )
-
-    project_dir.setup(lockfile, module_map=module_map)
-    assert project_dir.try_to_import(modname, warmup=warmup) == expected_args
+    # @TODO: So this is a problem...
+    #   If we did `import namespace.subdir`, the meta path finder will only see `namespace` first,
+    #   and we don't know how to materialize the namespace package (until we're fed `namespace.subdir`) so
+    #   we know what to install.
+    #   We have some options, but maybe least hacky would be to have the user tell us namespace packages?
+    #       ((would they even know?))
+    #   Alternatively we know if >1 package maps to a top-level name, we could just synthesize the namespace package
+    #       (by just making the directory, although that's hacky)
+    project_dir.setup(lockfile, module_map=module_map, installer_cmd_post="mkdir top")
+    assert project_dir.try_to_import(modname) == expected_args
 
 
 # @TODO: test `from X import Y` with namepsace packages (should try x.y, if possible)
