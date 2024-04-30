@@ -25,7 +25,6 @@ def test_simple(project_dir: ProjectDir):
                 install_missing_packages = true
                 """,
             "requirements.txt": "requests\n",
-            "project/doom.py": "import requests",
         },
     )
 
@@ -37,7 +36,7 @@ def test_simple(project_dir: ProjectDir):
     )
     # Run the code that attempts to import `requests`. Note this succeeds.
     subprocess.check_call(
-        [str(project_dir.python_path), "-m", "project.doom"],
+        [str(project_dir.python_path), "-c", "import requests"],
         cwd=str(project_dir.path),
     )
 

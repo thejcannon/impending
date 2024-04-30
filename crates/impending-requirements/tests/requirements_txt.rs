@@ -51,7 +51,6 @@ mod tests {
             if req_txt == "requirements_no_annotate.txt" {
                 assert_eq!(depmap.len(), 0);
             } else {
-                println!("{:?}", depmap);
                 assert_eq!(depmap.len(), 4);
                 assert_eq!(
                     depmap.get("requests").unwrap(),

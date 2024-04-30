@@ -315,11 +315,9 @@ def test_middle_modnames(
 
         class ExistsAfterInstallationMpf:
             def find_spec(self, name, path, target):
-                print(name, path, target)
                 global ASKED_COUNT
                 ASKED_COUNT += 1
                 if name == "top":
-                    print("top")
                     if ASKED_COUNT == 2:
                         import subdir
                         subdir.__spec__.name = "top"
