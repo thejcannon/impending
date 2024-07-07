@@ -3,6 +3,7 @@ import os
 import os.path
 import sys
 
+
 from ._impl import load_config
 
 
@@ -66,7 +67,7 @@ class RefreshPackageMPF(OnSpecFoundMPF):
             # NB: Since the core code loops over the real meta_path
             #   it won't make it to the InstallMissingPackageMPF.
             if self.config.install_missing_packages:
-                self.config.maybe_install(spec.name)
+                self.config.maybe_install(sys.prefix, spec.name)
             return None
 
         return spec

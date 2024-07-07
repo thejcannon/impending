@@ -1,7 +1,5 @@
-import shlex
 import subprocess
-import os
-from textwrap import dedent
+import sys
 from .conftest import ProjectDir as RootProjectDir
 from pathlib import Path
 
@@ -64,7 +62,7 @@ class ProjectDir(RootProjectDir):
 @pytest.fixture
 def project_dir(tmp_path) -> ProjectDir:
     subprocess.check_call(
-        ["uv", "venv", ".venv", "-q"],
+        ["uv", "venv", ".venv", "--python", sys.executable,  "-q"],
         cwd=tmp_path,
     )
     return ProjectDir(tmp_path, tmp_path / ".venv")
@@ -337,11 +335,7 @@ def test_incorrect_version_installed(
 ):
     project_dir.setup(lockfile, enforce_package_versions=True)
     subprocess.check_call(
-        ["uv", "pip", "install", "--no-deps", "requests==2.31.0"],
-        env={
-            **os.environ.copy(),
-            "VIRTUAL_ENV": str(project_dir.venv_dir.resolve()),
-        },
+        ["uv", "pip", "install",  "--no-deps", "--python", f"{project_dir.venv_dir.resolve()}","requests==2.31.0"],
     )
     assert project_dir.try_to_import(modname) == expected_args
 

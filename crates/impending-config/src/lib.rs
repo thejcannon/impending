@@ -82,36 +82,28 @@ impl Config {
             }
         }
 
-        // FALLBACK!
+        // Ok, so we weren't explictly told what this maps to, that's ok.
+        // Let's try a robust set of fallback(s).
+        // (inspired by https://joshcannon.me/2024/07/05/package-names.html)
         if let Some(maps) = &self.maps {
+            let normalized = pep508_normalize(&modname);
             let reqmap = &maps.reqmap;
 
-            // Attempt: 1:1 matching
-            if reqmap.contains_key(&modname) {
-                return Some(modname);
-            }
+            let transformations = [
+                |s: &String| s.to_string(),
+                |s: &String| format!("django-{}", s),
+                |s: &String| format!("python-{}", s),
+                |s: &String| format!("py{}", s),
+                |s: &String| format!("{}-py", s),
+                |s: &String| format!("{}-python", s),
+            ];
 
-            // Attempt: py{modname}
-            //  E.g. pygithub, pypng
-            let pkgname = format!("py{}", modname);
-            if reqmap.contains_key(&pkgname) {
-                return Some(pkgname);
-            }
-
-            // Attempt: python-{modname}
-            //  E.g. python-dateutil, python-dotenv
-            let pkgname = format!("python_{}", modname);
-            if reqmap.contains_key(&pkgname) {
-                return Some(pkgname);
-            }
-
-            // @TODO: More strategies:
-            //  - Azure does azure_NAME where NAME is "replace dots with underscores"
-            //      e.g. azure_mgmt_datalake_analytics -> azure.mgmt.datalake.analytics
+            return transformations.iter()
+                .map(|transform| transform(&normalized))
+                .find(|pkgname| reqmap.contains_key(pkgname));
         }
 
-        // At least we tried
-        None
+        None  // At least we tried
     }
 }
 
