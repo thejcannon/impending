@@ -76,6 +76,9 @@ impl Config {
     }
 
     fn find_package(&self, modname: String) -> Option<NormalizedPkgName> {
+        // @TODO: If the modname is the prefix of a namespace package, either explictly
+        //  via the user, or implcitly via fallback, we should signal that.
+
         if let Some(module_map) = &self.module_map {
             if let Some(pkgname) = module_map.get(&modname) {
                 return Some(pep508_normalize(pkgname));
@@ -109,16 +112,13 @@ impl Config {
 
 #[pymethods]
 impl Config {
-    // @TODO: I think this could probably be handled better in Rust.
-    //  E.g. does the distribution finding, can look things up transitively, etc...
-    pub fn get_expected_version(&mut self, fullname: String) -> anyhow::Result<Option<String>> {
+    pub fn get_package_name(&mut self, fullname: String) -> anyhow::Result<Option<String>> {
         self.initialize_maps()?;
-        let pkgname = self.find_package(fullname);
-        if pkgname.is_none() {
-            return Ok(None);
-        }
-        let pkgname = pkgname.unwrap();
+        Ok(self.find_package(fullname))
+    }
 
+    pub fn get_expected_version(&mut self, pkgname: String) -> anyhow::Result<Option<String>> {
+        self.initialize_maps()?;
         if let Some(maps) = &self.maps {
             if let Some(reqinfo) = maps.reqmap.get(&pkgname) {
                 return Ok(reqinfo.pinned_version());
@@ -127,16 +127,7 @@ impl Config {
         Ok(None)
     }
 
-    // @TODO: Special-case impending? :)
-    pub fn maybe_install(&mut self, sys_prefix: String, fullname: String) -> anyhow::Result<bool> {
-        self.initialize_maps()?;
-
-        let pkgname = self.find_package(fullname);
-        if pkgname.is_none() {
-            return Ok(false);
-        }
-        let pkgname = pkgname.unwrap();
-
+    pub fn maybe_install_package(&mut self, sys_prefix: String, pkgname: String) -> anyhow::Result<bool> {
         let mut requirements = vec![];
         let mut packages = vec![pkgname];
         let mut seen: HashSet<NormalizedPkgName> = HashSet::new();
@@ -186,6 +177,8 @@ impl Config {
 
         Ok(false)
     }
+
+    // @TODO: Special-case impending? :)
 }
 
 fn find_pyproject(mut current: &Path) -> Option<PathBuf> {

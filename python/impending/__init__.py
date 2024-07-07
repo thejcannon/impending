@@ -62,12 +62,15 @@ class RefreshPackageMPF(OnSpecFoundMPF):
             dist = importlib.metadata.Distribution.from_name(spec.name)
         except importlib.metadata.PackageNotFoundError:
             return spec
+        pkgname = self.config.get_package_name(spec.name)
+        if pkgname is None:
+            return None
         expected_version = self.config.get_expected_version(spec.name)
-        if expected_version != dist.version:
+        if expected_version and expected_version != dist.version:
             # NB: Since the core code loops over the real meta_path
             #   it won't make it to the InstallMissingPackageMPF.
             if self.config.install_missing_packages:
-                self.config.maybe_install(sys.prefix, spec.name)
+                self.config.maybe_install_package(sys.prefix, pkgname)
             return None
 
         return spec
@@ -78,8 +81,10 @@ class InstallMissingPackageMPF(OnSpecNotFoundMPF):
         self.config = config
 
     def on_spec_not_found(self, fullname, path, target):
-        print(fullname, path, target, file=sys.stderr)
-        self.config.maybe_install(sys.prefix, fullname)
+        pkgname = self.config.get_package_name(fullname)
+        if pkgname is None:
+            return False
+        self.config.maybe_install_package(sys.prefix, pkgname)
         return True
 
 

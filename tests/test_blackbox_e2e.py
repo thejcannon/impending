@@ -9,7 +9,7 @@ import pytest
 @pytest.fixture
 def project_dir(tmp_path: Path) -> ProjectDir:
     subprocess.check_call(
-        [sys.executable, "-m", "uv", "venv", "--seed", ".venv", "-q"],
+        [sys.executable, "-m", "uv", "venv", "--python", sys.executable, "--seed", ".venv", "-q"],
         cwd=tmp_path,
     )
     return ProjectDir(tmp_path, tmp_path / ".venv")
