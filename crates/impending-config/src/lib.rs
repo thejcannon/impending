@@ -98,9 +98,6 @@ impl Config {
 
 
     fn find_package(&self, modname: String) -> Option<NormalizedPkgName> {
-        // @TODO: If the modname is the prefix of a namespace package, either explictly
-        //  via the user, or implcitly via fallback, we should signal that.
-
         // Check if modname is a namespace
         if let Some(namespaces) = &self.namespaces {
             if namespaces.contains(&modname) {
