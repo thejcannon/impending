@@ -1,7 +1,9 @@
+import importlib.machinery
 import importlib.metadata
 import os
 import os.path
 import sys
+import site
 
 
 from ._impl import load_config
@@ -45,7 +47,9 @@ class OnSpecNotFoundMPF:
         raise NotImplementedError()
 
     def find_spec(self, fullname, path, target=None):
-        if self.on_spec_not_found(fullname, path, target):
+        if spec := self.on_spec_not_found(fullname, path, target):
+            if isinstance(spec, importlib.machinery.ModuleSpec):
+                return spec
             for finder in sys.meta_path.__super_iter__():
                 if (spec := finder.find_spec(fullname, path, target)) is not None:
                     return spec
@@ -65,6 +69,12 @@ class RefreshPackageMPF(OnSpecFoundMPF):
         pkgname = self.config.get_package_name(spec.name)
         if pkgname is None:
             return None
+
+        if pkgname == "":
+            # NB: We found a spec and this is an expected namespace package.
+            #   Nothing to do...
+            return spec
+
         expected_version = self.config.get_expected_version(spec.name)
         if expected_version and expected_version != dist.version:
             # NB: Since the core code loops over the real meta_path
@@ -84,7 +94,18 @@ class InstallMissingPackageMPF(OnSpecNotFoundMPF):
         pkgname = self.config.get_package_name(fullname)
         if pkgname is None:
             return False
-        self.config.maybe_install_package(sys.prefix, pkgname)
+
+        if pkgname == "":
+            explicit_ns = os.path.join(site.getsitepackages()[0], fullname.replace(".", os.sep), "__init__.py")
+            print(explicit_ns)
+            os.mkdir(os.path.dirname(explicit_ns))
+            with open(explicit_ns, "w") as f:
+                f.write(
+                    "# (Explicit namespace package created by `impending`)"
+                    "\n__path__ = __import__('pkgutil').extend_path(__path__, __name__)"
+                )
+        else:
+            self.config.maybe_install_package(sys.prefix, pkgname)
         return True
 
 

@@ -26,6 +26,7 @@ pub struct PyProjectTool {
 pub struct Config {
     pub lockfile: Option<String>,
     pub installer_cmd: Option<Vec<String>>,
+    // @TODO: Make sure the names don't overlap here (e.g. top -> foo, top.middle -> bar)
     pub module_map: Option<HashMap<String, String>>,
     pub package_companions: Option<HashMap<String, Vec<String>>>,
 
@@ -39,8 +40,12 @@ pub struct Config {
     pub install_missing_packages: Option<bool>,
     // @TODO: More fields, like:
     //  - Install types-packages
+
     #[serde(skip)]
     maps: Option<Maps>,
+    // Namespace packages names (dot-seperated) from `module_map`.
+    #[serde(skip)]
+    namespaces: Option<HashSet<String>>,
 
     #[serde(skip)]
     installed: HashSet<NormalizedPkgName>,
@@ -66,18 +71,42 @@ impl Config {
         ))
     }
 
+    /// Initialize the internal datastructures needed for package finding and installation.
+    /// They are delay-initialized to reduce runtime cost if we aren't gonna need 'em.
     fn initialize_maps(&mut self) -> anyhow::Result<()> {
         if self.maps.is_none() {
             if let Some(lockfile) = &self.lockfile {
                 self.maps = Some(parse_requirements_txt(&lockfile)?);
             }
         }
+        if self.namespaces.is_none() {
+            if let Some(module_map) = &self.module_map {
+                let mut namespaces = HashSet::new();
+                for key in module_map.keys() {
+                    let mut last_dot = 0;
+                    while let Some(dot_index) = key[last_dot..].find('.') {
+                        let namespace = &key[..last_dot + dot_index];
+                        namespaces.insert(namespace.to_string());
+                        last_dot += dot_index + 1;
+                    }
+                }
+                self.namespaces = Some(namespaces);
+            }
+        }
         Ok(())
     }
+
 
     fn find_package(&self, modname: String) -> Option<NormalizedPkgName> {
         // @TODO: If the modname is the prefix of a namespace package, either explictly
         //  via the user, or implcitly via fallback, we should signal that.
+
+        // Check if modname is a namespace
+        if let Some(namespaces) = &self.namespaces {
+            if namespaces.contains(&modname) {
+                return Some("".to_string());
+            }
+        }
 
         if let Some(module_map) = &self.module_map {
             if let Some(pkgname) = module_map.get(&modname) {

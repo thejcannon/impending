@@ -290,13 +290,6 @@ def test_everything(
         pytest.param(
             "top.middle", {"top": "package-a"}, "package-a", ["package_a"], id="dotted"
         ),
-        pytest.param(
-            "top.middle.bottom",
-            {"top": "package-a", "top.middle": "package-b"},
-            "package-a\npackage-b",
-            ["package_a", "package_b"],
-            id="dotted",
-        ),
     ],
 )
 def test_middle_modnames(
@@ -306,17 +299,39 @@ def test_middle_modnames(
     lockfile: str,
     expected_args: list[str],
 ):
-    # @TODO: So this is a problem...
-    #   If we did `import namespace.subdir`, the meta path finder will only see `namespace` first,
-    #   and we don't know how to materialize the namespace package (until we're fed `namespace.subdir`) so
-    #   we know what to install.
-    #   We have some options, but maybe least hacky would be to have the user tell us namespace packages?
-    #       ((would they even know?))
-    #   Alternatively we know if >1 package maps to a top-level name, we could just synthesize the namespace package
-    #       (by just making the directory, although that's hacky)
     project_dir.setup(lockfile, module_map=module_map, installer_cmd_post="mkdir top")
     assert project_dir.try_to_import(modname) == expected_args
+    assert False
 
+
+@pytest.mark.parametrize(
+    ["modname", "module_map", "lockfile"],
+    [
+        pytest.param(
+            "top.middle", {"top.other": "package-a"}, "package-a"
+        ),
+        pytest.param(
+            "top.middle.bottom", {"top.middle.other": "package-a"}, "package-a"
+        ),
+    ],
+)
+def test_namespace_packages(
+    project_dir: ProjectDir,
+    modname: str,
+    module_map: dict[str, str],
+    lockfile: str,
+):
+    project_dir.setup(lockfile, module_map=module_map, installer_cmd_post="mkdir top")
+    project_dir.write_tree({ "test.py": f"import {modname}"})
+    with pytest.raises(subprocess.CalledProcessError) as e:
+        subprocess.check_output(
+            [str(project_dir.python_path), "-m", "test"],
+            cwd=str(project_dir.path),
+            text=True,
+            stderr=subprocess.PIPE
+        )
+    print(e.value.stdout)
+    assert f"No module named '{modname}'" in e.value.stderr
 
 # @TODO: test `from X import Y` with namepsace packages (should try x.y, if possible)
 # bUt also just try `from` imports
@@ -339,8 +354,6 @@ def test_incorrect_version_installed(
     )
     assert project_dir.try_to_import(modname) == expected_args
 
-
-# @TODO: Start handling testing namespace packages
 
 
 # @TODO: Ensure we arne't iterating the meta_path too many times
